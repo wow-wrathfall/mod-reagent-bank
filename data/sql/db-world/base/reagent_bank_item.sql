@@ -30,8 +30,7 @@ INSERT INTO `item_template`
      1, 'Right-click to access your personal reagent bank from anywhere.', 836, 0, 1,
      'item_reagent_bank');
 
--- Grant the item to every newly created character (race/class pair), mirroring
--- the starter-supplies pattern. INSERT IGNORE keeps existing rows untouched.
-INSERT IGNORE INTO `playercreateinfo_item` (`race`, `class`, `itemid`, `amount`, `Note`)
-SELECT DISTINCT `RaceID`, `ClassID`, @ItemEntry, 1, 'Portable Reagent Bank starter item'
-FROM `charstartoutfit_dbc`;
+-- The reagent bank is opened with the ".reagentbank" command, so the item is no
+-- longer auto-granted. Remove any prior starter-item grant (idempotent). The
+-- item_template above is kept so the NPC banker / item still work if used.
+DELETE FROM `playercreateinfo_item` WHERE `itemid` = @ItemEntry;

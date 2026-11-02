@@ -3,11 +3,20 @@
  */
 
 #include "ReagentBank.h"
+#include "ChatCommand.h"
 
-// Shared reagent-bank logic, GUID-based so it can be driven by either the
-// banker NPC (CreatureScript) or the reagent-bank item (ItemScript). The
-// "sender" GUID is whatever object opened the menu; gossip selections are
-// routed back to that same object by the core.
+using namespace Acore::ChatCommands;
+
+// Unique gossip menu id for the player-owned menu opened by the .reagentbank
+// command. When the menu owner is the player (command), the core routes gossip
+// selections to PlayerScript::OnPlayerGossipSelect; we filter on this id so we
+// only handle our own menu. NPC- and item-owned menus route by GUID type instead.
+static constexpr uint32 REAGENT_BANK_MENU_ID = 9000500;
+
+// Shared reagent-bank logic, GUID-based so it can be driven by the banker NPC
+// (CreatureScript), the reagent-bank item (ItemScript), or the .reagentbank
+// command (player-owned gossip). The "sender" GUID is whatever opened the menu;
+// gossip selections are routed back to that same owner by the core.
 namespace
 {
     std::string GetItemLink(uint32 entry, WorldSession* session)
@@ -213,6 +222,7 @@ namespace
                 AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Next Page", item_subclass, gossipPageNumber + 1);
             }
             AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack...", MAIN_MENU, 0);
+            player->PlayerTalkClass->GetGossipMenu().SetMenuId(REAGENT_BANK_MENU_ID);
             SendGossipMenuFor(player, NPC_TEXT_ID, sender);
         }));
     }
@@ -235,6 +245,7 @@ namespace
         AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, GetItemIcon(38682, 30, 30, -18, 0) + "Armor Vellum", ITEM_SUBCLASS_ARMOR_ENCHANTMENT, 0);
         AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, GetItemIcon(39349, 30, 30, -18, 0) + "Weapon Vellum", ITEM_SUBCLASS_WEAPON_ENCHANTMENT, 0);
         AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "Deposit All Reagents", DEPOSIT_ALL_REAGENTS, 0);
+        player->PlayerTalkClass->GetGossipMenu().SetMenuId(REAGENT_BANK_MENU_ID);
         SendGossipMenuFor(player, NPC_TEXT_ID, sender);
     }
 
@@ -314,9 +325,50 @@ public:
     }
 };
 
+// Open the reagent bank from anywhere with ".reagentbank". The menu is owned by
+// the player (no NPC/item), so selections return through the PlayerScript below.
+class reagent_bank_commandscript : public CommandScript
+{
+public:
+    reagent_bank_commandscript() : CommandScript("reagent_bank_commandscript") { }
+
+    ChatCommandTable GetCommands() const override
+    {
+        static ChatCommandTable commandTable =
+        {
+            { "reagentbank", HandleReagentBankCommand, SEC_PLAYER, Console::No },
+        };
+        return commandTable;
+    }
+
+    static bool HandleReagentBankCommand(ChatHandler* handler)
+    {
+        if (Player* player = handler->GetPlayer())
+            SendMainMenu(player, player->GetGUID());
+        return true;
+    }
+};
+
+// Routes selections for the player-owned menu opened by .reagentbank. Filters on
+// REAGENT_BANK_MENU_ID so it ignores every other module's player gossip.
+class reagent_bank_playerscript : public PlayerScript
+{
+public:
+    reagent_bank_playerscript() : PlayerScript("reagent_bank_playerscript", { PLAYERHOOK_ON_GOSSIP_SELECT }) { }
+
+    void OnPlayerGossipSelect(Player* player, uint32 menuId, uint32 sender, uint32 action) override
+    {
+        if (menuId != REAGENT_BANK_MENU_ID)
+            return;
+        HandleSelect(player, player->GetGUID(), sender, action);
+    }
+};
+
 // Add all scripts in one
 void AddSC_mod_reagent_bank()
 {
     new npc_reagent_banker();
     new item_reagent_bank();
+    new reagent_bank_commandscript();
+    new reagent_bank_playerscript();
 }
