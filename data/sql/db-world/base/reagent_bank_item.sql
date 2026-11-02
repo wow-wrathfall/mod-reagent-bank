@@ -17,7 +17,7 @@ INSERT INTO `item_template`
      `AllowableRace`, `ItemLevel`, `RequiredLevel`, `maxcount`, `stackable`,
      `bonding`, `description`, `spellid_1`, `spelltrigger_1`, `Material`,
      `ScriptName`) VALUES
-    (@ItemEntry, 15, 0, 'Portable Reagent Bank', 1246, 3, 0,
+    (@ItemEntry, 15, 0, 'Portable Reagent Bank', 1246, 3, 64,
      1, 0, 0, 0, -1,
      -1, 1, 1, 1, 1,
      1, 'Right-click to access your personal reagent bank from anywhere.', 8690, 0, 1,
