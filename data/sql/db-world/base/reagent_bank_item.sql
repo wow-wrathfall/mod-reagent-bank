@@ -2,10 +2,11 @@
 -- Right-clicking the item opens the reagent bank from anywhere; the use is
 -- handled by the 'item_reagent_bank' ItemScript (modules/mod-reagent-bank).
 --
--- The dummy on-use spell (836 = LOGINEFFECT) exists only so the client shows a
--- "Use" button and sends CMSG_USE_ITEM. The script intercepts the use and
--- returns true, so the spell never actually resolves. If "Use" does not appear
--- in-game, swap spellid_1 for any other instant, self-cast on-use spell.
+-- spellid_1 8690 (Hearthstone spell) is used as a dummy on-use trigger. It is
+-- an instant self-cast that the WoW 3.3.5a client recognises as a draggable
+-- use-item; without a valid use spell the item cannot be placed on action bars.
+-- The item_reagent_bank ItemScript returns true from OnUse so the spell never
+-- resolves and the Hearthstone teleport does not fire.
 
 SET @ItemEntry = 900000;
 
@@ -16,10 +17,10 @@ INSERT INTO `item_template`
      `AllowableRace`, `ItemLevel`, `RequiredLevel`, `maxcount`, `stackable`,
      `bonding`, `description`, `spellid_1`, `spelltrigger_1`, `Material`,
      `ScriptName`) VALUES
-    (@ItemEntry, 15, 0, 'Portable Reagent Bank', 6418, 3, 0,
+    (@ItemEntry, 15, 0, 'Portable Reagent Bank', 1246, 3, 0,
      1, 0, 0, 0, -1,
      -1, 1, 1, 1, 1,
-     1, 'Right-click to access your personal reagent bank from anywhere.', 836, 0, 1,
+     1, 'Right-click to access your personal reagent bank from anywhere.', 8690, 0, 1,
      'item_reagent_bank');
 
 -- Grant the item to every newly created character (race/class pair), mirroring
